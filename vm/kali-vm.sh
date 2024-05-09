@@ -341,7 +341,7 @@ getImageURL() {
     local found=false
 
     for ((i=52; i>=1; i--)); do
-        URL="https://cdimage.kali.org/kali-weekly/kali-linux-$current_year-W$i-vmware-amd64.7z"
+        URL="https://cdimage.kali.org/kali-weekly/kali-linux-$current_year-W$i-qemu-amd64.7z"
         if curl --output /dev/null --silent --head --fail "$URL"; then
             found=true
             break
@@ -395,7 +395,7 @@ getImageURL
 msg_ok "${CL}${BL}${URL}${CL}"
 wget -q --show-progress $URL
 echo -en "\e[1A\e[0K"
-FILE=$(basename $URL .7z).img
+FILE=$(basename $URL .7z).qcow2
 msg_ok "Downloaded ${CL}${BL}$(basename $URL)${CL}"
 
 msg_info "Installing dependencies"
@@ -407,9 +407,10 @@ msg_info "Extracting archive $(basename $URL), patience"
 msg_ok "Extracted ${CL}${BL}$(basename $URL)${CL}"
 
 msg_info "Modifying ${FILE}, patience"
-qemu-img convert -f vmdk -O raw $(basename $URL .7z).vmdk ${FILE}
 virt-customize -qa ${FILE} --install cloud-init &>/dev/null
 virt-customize -qa ${FILE} --install qemu-guest-agent &>/dev/null
+virt-customize -qa ${FILE} --run-command 'systemctl enable ssh.service' &>/dev/null
+virt-customize -qa ${FILE} --install resolvconf &>/dev/null
 msg_ok "Modified ${CL}${BL}${FILE}${CL}"
 
 msg_info "Updating ${FILE}, a lot of patience"
